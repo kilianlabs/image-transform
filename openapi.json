@@ -1,0 +1,511 @@
+{
+  "components": {
+    "schemas": {
+      "Health": {
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "enum": [
+              "ok"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "type": "object"
+      },
+      "Metadata": {
+        "additionalProperties": false,
+        "properties": {
+          "byte_count": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "frame_count": {
+            "description": "Number of frames; 1 for a still image.",
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "frame_delays_ms": {
+            "description": "Frame durations in milliseconds, for animated images.",
+            "items": {
+              "format": "int64",
+              "type": "integer"
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "height": {
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "loop_count": {
+            "description": "Animation plays; 0 means repeat indefinitely.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "mime_type": {
+            "type": "string"
+          },
+          "oriented_height": {
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "oriented_width": {
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page_count": {
+            "description": "Number of top-level images in a TIFF or HEIF/AVIF collection.",
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page_index": {
+            "description": "Selected image in a collection, numbered from zero. TIFF uses the first page; HEIF/AVIF uses the primary image.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "width": {
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "mime_type",
+          "byte_count",
+          "sha256",
+          "width",
+          "height",
+          "oriented_width",
+          "oriented_height",
+          "frame_count"
+        ],
+        "type": "object"
+      },
+      "Problem": {
+        "additionalProperties": false,
+        "properties": {
+          "detail": {
+            "type": "string"
+          },
+          "status": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "title",
+          "status",
+          "detail"
+        ],
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "description": "Inspect JPEG, PNG, GIF, WebP, JXL, BMP, TIFF, HEIC/HEIF, and AVIF images and convert them to WebP or JXL on a trusted private network. GIF, WebP, and JXL animations are supported. TIFF uses the first page; HEIF/AVIF uses the primary image. Detected APNG and HEIF/AVIF image sequences are rejected. Native decoders may recover damaged inputs or omit unrecognized animation frames. Output colors target sRGB; reliable HDR tone mapping and NCLX-only color handling are not supported.",
+    "title": "Image Transform",
+    "version": "0.1.0"
+  },
+  "openapi": "3.0.3",
+  "paths": {
+    "/api/inspect": {
+      "post": {
+        "operationId": "inspectImage",
+        "requestBody": {
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "format": "binary",
+                "type": "string",
+                "x-contentMediaType": "application/octet-stream"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Metadata"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "408": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Timeout"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          },
+          "504": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Gateway Timeout"
+          }
+        },
+        "summary": "Validate an image and inspect its dimensions and animation metadata"
+      }
+    },
+    "/api/transform": {
+      "post": {
+        "operationId": "transformImage",
+        "parameters": [
+          {
+            "explode": false,
+            "in": "query",
+            "name": "format",
+            "required": true,
+            "schema": {
+              "enum": [
+                "webp",
+                "jxl"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional maximum output width; never upscale.",
+            "explode": false,
+            "in": "query",
+            "name": "width",
+            "schema": {
+              "description": "Optional maximum output width; never upscale.",
+              "format": "int64",
+              "maximum": 16383,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Optional maximum output height; never upscale.",
+            "explode": false,
+            "in": "query",
+            "name": "height",
+            "schema": {
+              "description": "Optional maximum output height; never upscale.",
+              "format": "int64",
+              "maximum": 16383,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Lossy WebP quality only.",
+            "explode": false,
+            "in": "query",
+            "name": "quality",
+            "schema": {
+              "default": 80,
+              "description": "Lossy WebP quality only.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Lossy JXL distance, greater than zero.",
+            "explode": false,
+            "in": "query",
+            "name": "distance",
+            "schema": {
+              "default": 1,
+              "description": "Lossy JXL distance, greater than zero.",
+              "exclusiveMinimum": true,
+              "format": "double",
+              "maximum": 25,
+              "minimum": 0,
+              "type": "number"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "lossless",
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "format": "binary",
+                "type": "string",
+                "x-contentMediaType": "application/octet-stream"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "image/jxl": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string",
+                  "x-contentMediaType": "application/octet-stream"
+                }
+              },
+              "image/webp": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string",
+                  "x-contentMediaType": "application/octet-stream"
+                }
+              }
+            },
+            "description": "Validated still or animated image. Each frame fits within the requested bounds without upscaling or cropping.",
+            "headers": {
+              "Content-Length": {
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-Image-Frame-Count": {
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              },
+              "X-Image-Height": {
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              },
+              "X-Image-SHA256": {
+                "schema": {
+                  "pattern": "^[0-9a-f]{64}$",
+                  "type": "string"
+                }
+              },
+              "X-Image-Width": {
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "408": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Timeout"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          },
+          "504": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Gateway Timeout"
+          }
+        },
+        "summary": "Generate one WebP or JXL derivative"
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "getHealth",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Check native codec readiness"
+      }
+    }
+  }
+}

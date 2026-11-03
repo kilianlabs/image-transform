@@ -1,0 +1,6 @@
+/bin/
+/coverage.out
+/.cache/
+/.client-check/
+*.env
+.DS_Store

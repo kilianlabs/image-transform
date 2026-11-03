@@ -1,0 +1,19 @@
+Image Transform
+Copyright (c) 2026 KilianLabs and contributors
+
+Original project code and documentation are licensed under the MIT License.
+Third-party code and libraries retain their own copyright and license terms.
+
+The packaged executable uses Go, govips, Huma, Chi, and native libvips with its
+codec and color-management dependencies.
+
+The current Alpine libvips build links GPL-covered libraries, including
+libimagequant (GPL-3.0-or-later) and FFTW (GPL-2.0-or-later). Distribution
+of the combined executable is therefore subject to GPL-3.0-or-later terms in
+addition to the original components' notices. The complete image is not MIT-only.
+Libvips itself is LGPL-2.1-or-later. The MIT license on this project's original
+source remains available independently of the packaged native-library build.
+
+Distributors must provide the corresponding source and build material required
+by the included licenses. License notices or upstream links alone do not replace
+those obligations.

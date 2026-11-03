@@ -1,0 +1,50 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:best-practices", "docker:enableMajor", "schedule:earlyMondays"],
+  "timezone": "Europe/Berlin",
+  "automerge": false,
+  "platformAutomerge": false,
+  "prHourlyLimit": 0,
+  "postUpdateOptions": ["gomodTidy"],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^Dockerfile$/", "/^scripts/check-client\\.sh$/"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+) versioning=(?<versioning>\\S+)\\s+(?:ARG )?[A-Z_]+=(?<currentValue>\\S+)"
+      ]
+    }
+  ],
+  "packageRules": [
+    {
+      "groupName": "docker-digest",
+      "matchDatasources": ["docker"],
+      "matchUpdateTypes": ["digest"],
+      "automerge": true
+    },
+    {
+      "groupName": "github-actions-digest",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["digest"]
+    },
+    {
+      "groupName": "go-non-major",
+      "matchDatasources": ["go"],
+      "matchUpdateTypes": ["patch", "minor"],
+      "automerge": true
+    },
+    {
+      "groupName": "native-image-libraries",
+      "matchDatasources": ["apk"],
+      "registryUrls": [
+        "https://dl-cdn.alpinelinux.org/alpine?branch=v3.24&components=main,community&arch=x86_64"
+      ]
+    },
+    {
+      "description": "Keep both stages on Alpine 3.24; distribution upgrades also need new package pins.",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["alpine"],
+      "allowedVersions": "/^3\\.24(?:\\.\\d+)?$/"
+    }
+  ]
+}

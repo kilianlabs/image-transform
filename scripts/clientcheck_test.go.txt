@@ -1,0 +1,98 @@
+package client
+
+import (
+	"bytes"
+	"crypto/sha256"
+	"fmt"
+	"io"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"slices"
+	"strconv"
+	"testing"
+	"time"
+
+	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/kilianlabs/image-transform/internal/httpapi"
+	"github.com/kilianlabs/image-transform/internal/imageproc"
+	"github.com/kilianlabs/image-transform/internal/native"
+	"github.com/kilianlabs/image-transform/internal/service"
+	"github.com/kilianlabs/image-transform/internal/testimage"
+)
+
+func TestGeneratedClientAndContract(t *testing.T) {
+	loader := openapi3.NewLoader()
+	doc, err := loader.LoadFromFile("openapi.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := doc.Validate(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	p, err := native.Start(imageproc.Limits{MaxPixels: 50_000_000, MaxAxis: 16383, MaxFrames: 500, MaxOutputBytes: 256 << 20}, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer native.Shutdown()
+	s := service.New(p, t.TempDir(), 100<<20, 1, time.Minute)
+	defer func() { s.Stop(); s.Wait() }()
+	server := httptest.NewServer(httpapi.New(s, nil).Handler)
+	defer server.Close()
+	client, err := NewClientWithResponses(server.URL + "/")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, fixture := range []struct {
+		input  []byte
+		frames int
+	}{
+		{testimage.PNG(96, 64, true), 1},
+		{testimage.GIF(96, 64, []int{4, 7, 13}, 2), 3},
+	} {
+		input := fixture.input
+		inspection, err := client.InspectImageWithBodyWithResponse(t.Context(), "application/octet-stream", bytes.NewReader(input))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if inspection.JSON200 == nil || inspection.JSON200.Width != 96 || inspection.JSON200.ByteCount != int64(len(input)) || inspection.JSON200.FrameCount != int64(fixture.frames) {
+			t.Fatalf("%+v", inspection)
+		}
+		if fixture.frames > 1 {
+			if inspection.JSON200.FrameDelaysMs == nil || !slices.Equal(*inspection.JSON200.FrameDelaysMs, []int64{40, 70, 130}) || inspection.JSON200.LoopCount == nil || *inspection.JSON200.LoopCount != 3 {
+				t.Fatalf("%+v", inspection.JSON200)
+			}
+		}
+		for _, format := range []TransformImageParamsFormat{Webp, Jxl} {
+			// The raw generated method exposes the body as a stream. WithResponse
+			// would buffer the entire derivative before returning.
+			response, err := client.TransformImageWithBody(t.Context(), &TransformImageParams{Format: format, Width: new(int64(32))}, "application/octet-stream", bytes.NewReader(input))
+			if err != nil {
+				t.Fatal(err)
+			}
+			hash := sha256.New()
+			n, err := io.Copy(hash, response.Body)
+			response.Body.Close()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if response.StatusCode != 200 || response.Header.Get("Content-Type") != "image/"+string(format) || response.Header.Get("X-Image-Width") != "32" || response.Header.Get("X-Image-Height") != "21" || response.Header.Get("X-Image-Frame-Count") != strconv.Itoa(fixture.frames) || n != response.ContentLength || response.Header.Get("X-Image-SHA256") != fmt.Sprintf("%x", hash.Sum(nil)) {
+				t.Fatalf("%d %v", response.StatusCode, response.Header)
+			}
+		}
+	}
+	for name, page := range map[string]int64{"collection.tiff": 0, "collection.heic": 1, "collection.avif": 1} {
+		input, err := os.ReadFile(filepath.Join("testdata", name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		response, err := client.InspectImageWithBodyWithResponse(t.Context(), "application/octet-stream", bytes.NewReader(input))
+		if err != nil {
+			t.Fatal(err)
+		}
+		metadata := response.JSON200
+		if metadata == nil || metadata.FrameCount != 1 || metadata.PageCount == nil || *metadata.PageCount != 2 || metadata.PageIndex == nil || *metadata.PageIndex != page {
+			t.Fatalf("%s: %+v", name, metadata)
+		}
+	}
+}
