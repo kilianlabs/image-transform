@@ -80,3 +80,18 @@ checks and container tests.
 
 Compare visual quality on representative images when changing codec defaults.
 For available image tags and deployment updates, see [image tags and upgrades](docs/releases.md).
+
+## Preparing a release
+
+1. Set `Version` in [internal/buildinfo/version.go](internal/buildinfo/version.go)
+   to the release version, then run `make openapi`. Include the generated contract
+   with the version change.
+2. Run `make check` and `make smoke-platforms`. The latter tests the runtime on
+   both supported architectures. Review changes to the API, configuration, and
+   native libraries and update the relevant documentation.
+3. After the changes land on `main`, create a tag named `v<version>`, such as
+   `v0.1.0`, on the release commit. Pushing the tag triggers the container workflow.
+
+Release CI requires the tag, source version, and OpenAPI version to match. The
+container workflow runs all checks before publishing AMD64 and ARM64 images to
+GHCR. See [NOTICE](NOTICE) for the packaged native libraries' distribution terms.

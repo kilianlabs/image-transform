@@ -8,17 +8,19 @@ import (
 )
 
 type Config struct {
-	Host           string
-	Port           int
-	TempDir        string
-	MaxInputBytes  int64
-	MaxOutputBytes int64
-	MaxPixels      int64
-	MaxAxis        int
-	MaxFrames      int
-	MaxConcurrent  int
-	VIPSThreads    int
-	RequestTimeout time.Duration
+	Host                   string
+	Port                   int
+	TempDir                string
+	MaxInputBytes          int64
+	MaxOutputBytes         int64
+	MaxPixels              int64
+	MaxAxis                int
+	MaxFrames              int
+	MaxConcurrent          int
+	MaxInspectConcurrent   int
+	MaxTransformConcurrent int
+	VIPSThreads            int
+	RequestTimeout         time.Duration
 }
 
 func Read(getenv func(string) string) (Config, error) {
@@ -81,6 +83,23 @@ func Read(getenv func(string) string) (Config, error) {
 			return c, fmt.Errorf("invalid REQUEST_TIMEOUT")
 		}
 		c.RequestTimeout = d
+	}
+	c.MaxInspectConcurrent, c.MaxTransformConcurrent = c.MaxConcurrent, c.MaxConcurrent
+	for _, item := range []struct {
+		name string
+		dst  *int
+		max  int
+	}{
+		{"MAX_INSPECT_CONCURRENT", &c.MaxInspectConcurrent, c.MaxConcurrent},
+		{"MAX_TRANSFORM_CONCURRENT", &c.MaxTransformConcurrent, c.MaxConcurrent},
+	} {
+		if v := getenv(item.name); v != "" {
+			n, err := strconv.Atoi(v)
+			if err != nil || n < 1 || n > item.max {
+				return c, fmt.Errorf("invalid %s", item.name)
+			}
+			*item.dst = n
+		}
 	}
 	return c, nil
 }

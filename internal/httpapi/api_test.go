@@ -36,9 +36,31 @@ func (p *fakeProcessor) Transform(_ context.Context, _, dst string, options imag
 
 func setup(t *testing.T, p *fakeProcessor) (*App, *service.Service) {
 	t.Helper()
-	s := service.New(p, t.TempDir(), 100, 1, time.Second)
+	s := service.New(p, t.TempDir(), 100, service.AdmissionLimits{Concurrent: 1}, time.Second)
 	t.Cleanup(func() { s.Stop(); s.Wait() })
 	return New(s, nil), s
+}
+
+func TestBusyContractAndHealthUnderSaturation(t *testing.T) {
+	app, service := setup(t, new(fakeProcessor))
+	result, err := service.Run(t.Context(), strings.NewReader("source"), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer result.Close()
+	w := request(app, "/api/inspect", "source", "application/octet-stream")
+	var p Problem
+	if err := json.Unmarshal(w.Body.Bytes(), &p); err != nil {
+		t.Fatal(err)
+	}
+	if w.Code != 503 || p.Type != "urn:image-transform:error:busy" {
+		t.Fatal(w.Code, w.Header(), p)
+	}
+	health := httptest.NewRecorder()
+	app.Handler.ServeHTTP(health, httptest.NewRequest("GET", "/health", nil))
+	if health.Code != 200 {
+		t.Fatal("health depends on image capacity", health.Code)
+	}
 }
 func request(app *App, path, body, contentType string) *httptest.ResponseRecorder {
 	r := httptest.NewRequest("POST", path, strings.NewReader(body))

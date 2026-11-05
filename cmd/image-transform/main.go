@@ -48,7 +48,11 @@ func run() error {
 	if err != nil {
 		return errors.New("native codec startup checks failed")
 	}
-	jobs := service.New(processor, cfg.TempDir, cfg.MaxInputBytes, cfg.MaxConcurrent, cfg.RequestTimeout)
+	jobs := service.New(processor, cfg.TempDir, cfg.MaxInputBytes, service.AdmissionLimits{
+		Concurrent:          cfg.MaxConcurrent,
+		InspectConcurrent:   cfg.MaxInspectConcurrent,
+		TransformConcurrent: cfg.MaxTransformConcurrent,
+	}, cfg.RequestTimeout)
 	var ready atomic.Bool
 	ready.Store(true)
 	app := httpapi.New(jobs, ready.Load)

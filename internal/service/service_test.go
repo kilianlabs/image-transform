@@ -13,13 +13,17 @@ import (
 )
 
 type processor struct {
-	inspect func(context.Context, string) (imageproc.Metadata, error)
+	inspect   func(context.Context, string) (imageproc.Metadata, error)
+	transform func(context.Context, string, string, imageproc.Options) (imageproc.Metadata, error)
 }
 
 func (p processor) Inspect(ctx context.Context, path string) (imageproc.Metadata, error) {
 	return p.inspect(ctx, path)
 }
-func (p processor) Transform(context.Context, string, string, imageproc.Options) (imageproc.Metadata, error) {
+func (p processor) Transform(ctx context.Context, source, destination string, options imageproc.Options) (imageproc.Metadata, error) {
+	if p.transform != nil {
+		return p.transform(ctx, source, destination, options)
+	}
 	panic("unexpected transform")
 }
 
@@ -31,7 +35,7 @@ func TestCancellationRetainsSlotAndFilesUntilNativeReturns(t *testing.T) {
 		entered <- path
 		<-release
 		return imageproc.Metadata{}, nil
-	}}, dir, 100, 1, time.Minute)
+	}}, dir, 100, AdmissionLimits{Concurrent: 1}, time.Minute)
 	ctx, cancel := context.WithCancel(t.Context())
 	done := make(chan error, 1)
 	go func() { _, err := s.Run(ctx, strings.NewReader("original"), nil); done <- err }()
@@ -59,7 +63,7 @@ func TestResultOwnsSlotAndCleanup(t *testing.T) {
 	dir := t.TempDir()
 	s := New(processor{inspect: func(ctx context.Context, path string) (imageproc.Metadata, error) {
 		return imageproc.Metadata{Width: 2}, nil
-	}}, dir, 100, 1, time.Minute)
+	}}, dir, 100, AdmissionLimits{Concurrent: 1}, time.Minute)
 	result, err := s.Run(t.Context(), strings.NewReader("original"), nil)
 	if err != nil {
 		t.Fatal(err)
@@ -86,7 +90,7 @@ func TestLimitsAndErrors(t *testing.T) {
 		native, want error
 	}{{"empty", "", nil, imageproc.ErrInvalid}, {"oversized", "12345", nil, imageproc.ErrTooLarge}, {"native failure", "123", imageproc.ErrFrames, imageproc.ErrFrames}} {
 		t.Run(test.name, func(t *testing.T) {
-			s := New(processor{inspect: func(context.Context, string) (imageproc.Metadata, error) { return imageproc.Metadata{}, test.native }}, t.TempDir(), 4, 1, time.Minute)
+			s := New(processor{inspect: func(context.Context, string) (imageproc.Metadata, error) { return imageproc.Metadata{}, test.native }}, t.TempDir(), 4, AdmissionLimits{Concurrent: 1}, time.Minute)
 			_, err := s.Run(t.Context(), strings.NewReader(test.body), nil)
 			if !errors.Is(err, test.want) {
 				t.Fatalf("%v != %v", err, test.want)
@@ -104,7 +108,7 @@ func TestDeadline(t *testing.T) {
 		close(entered)
 		<-release
 		return imageproc.Metadata{}, nil
-	}}, t.TempDir(), 100, 1, 50*time.Millisecond)
+	}}, t.TempDir(), 100, AdmissionLimits{Concurrent: 1}, 50*time.Millisecond)
 	done := make(chan error, 1)
 	go func() { _, err := s.Run(t.Context(), strings.NewReader("source"), nil); done <- err }()
 	<-entered
@@ -126,7 +130,7 @@ func TestShutdownCancelsRequestsAndWaitsForNativeWork(t *testing.T) {
 		<-ctx.Done()
 		<-release
 		return imageproc.Metadata{}, nil
-	}}, dir, 100, 1, time.Minute)
+	}}, dir, 100, AdmissionLimits{Concurrent: 1}, time.Minute)
 	t.Cleanup(func() { finish(); s.Stop(); s.Wait() })
 	done := make(chan error, 1)
 	go func() { _, err := s.Run(t.Context(), strings.NewReader("source"), nil); done <- err }()

@@ -20,6 +20,8 @@ startup; configuration changes require a restart.
 | `MAX_AXIS` | `16383` | Maximum width or height of each source frame; cannot exceed 16,383 |
 | `MAX_FRAMES` | `500` | Maximum source frames, from 1 to 10,000 |
 | `MAX_CONCURRENT` | `1` | Simultaneous image requests, including upload and response download |
+| `MAX_INSPECT_CONCURRENT` | `MAX_CONCURRENT` | Maximum active inspections; 1 to `MAX_CONCURRENT` |
+| `MAX_TRANSFORM_CONCURRENT` | `MAX_CONCURRENT` | Maximum active conversions; 1 to `MAX_CONCURRENT` |
 | `VIPS_THREADS` | `2` | Number of libvips processing threads |
 | `REQUEST_TIMEOUT` | `120s` | Upload and processing deadline; accepts durations such as `30s` or `2m`, up to `1h` |
 
@@ -66,18 +68,38 @@ size limit does not cap memory used during encoding. Test representative images
 before raising input or concurrency limits. If the container runs out of memory,
 increase its memory allocation or reduce the image limits.
 
-`MAX_CONCURRENT` limits whole image requests. When all slots are occupied, new
-requests return `503` with type `urn:image-transform:error:busy`. Use a queue or
-retry with backoff in your application. Increasing concurrency may also require
-more memory, CPU, and temporary storage. Health and OpenAPI requests remain
-available independently of image-processing capacity.
+`MAX_CONCURRENT` limits whole image requests. Each operation also has its own
+active limit. Requests that exceed either limit receive `503 busy` immediately,
+before the body is copied to temporary storage. The service has no waiting queue.
+Setting only `MAX_CONCURRENT` retains shared capacity.
+
+To allow one inspection alongside one conversion, add these settings to the
+service's Compose configuration:
+
+```yaml
+environment:
+  MAX_CONCURRENT: "2"
+  MAX_INSPECT_CONCURRENT: "1"
+  MAX_TRANSFORM_CONCURRENT: "1"
+```
+
+Conversions cannot borrow the inspection slot in this configuration. CPU, memory
+and tmpfs remain shared. Applications retain pending jobs and retry explicit
+`urn:image-transform:error:busy` responses with backoff and jitter. Health and
+OpenAPI requests remain independent of image capacity.
+
+The [concurrency benchmark](benchmarks/concurrency.md) compares the shared
+slot with 2/1/1 admission and one or two libvips threads under these container
+limits. Use its reproducible workload as a starting point, then measure your own
+images and hardware.
 
 ## Timeouts and cancellation
 
 Set client and proxy timeouts to allow for upload, conversion, and downloading
-the result. `REQUEST_TIMEOUT` defaults to two minutes. Slow uploads and downloads
-also have transport deadlines, so a connection can close before a complete
-response arrives.
+the result. `REQUEST_TIMEOUT` covers upload and processing and defaults to two
+minutes. HTTP reads use the same duration; writes allow five additional seconds
+for response delivery. Slow uploads and downloads also have transport deadlines,
+so a connection can close before a complete response arrives.
 
 When a request times out or its client disconnects, the service asks processing
 to stop and discards any late result. An encoder may need to finish its current

@@ -33,7 +33,8 @@ type Service struct {
 	tempDir   string
 	maxInput  int64
 	timeout   time.Duration
-	slots     chan struct{}
+	limits    AdmissionLimits
+	active    [2]int
 	ctx       context.Context
 	cancel    context.CancelFunc
 	mu        sync.Mutex
@@ -41,16 +42,26 @@ type Service struct {
 	wg        sync.WaitGroup
 }
 
-func New(p imageproc.ImageProcessor, tempDir string, maxInput int64, concurrent int, timeout time.Duration) *Service {
+func New(p imageproc.ImageProcessor, tempDir string, maxInput int64, limits AdmissionLimits, timeout time.Duration) *Service {
 	ctx, cancel := context.WithCancel(context.Background())
-	return &Service{processor: p, tempDir: tempDir, maxInput: maxInput, timeout: timeout, slots: make(chan struct{}, concurrent), ctx: ctx, cancel: cancel}
+	if limits.InspectConcurrent == 0 {
+		limits.InspectConcurrent = limits.Concurrent
+	}
+	if limits.TransformConcurrent == 0 {
+		limits.TransformConcurrent = limits.Concurrent
+	}
+	return &Service{processor: p, tempDir: tempDir, maxInput: maxInput, timeout: timeout, limits: limits, ctx: ctx, cancel: cancel}
 }
 
 // Run may return at a deadline before native work returns. The worker retains
 // its slot, source file and image resources until it actually stops. A successful
 // result owns the slot until Close, including while its file is streamed out.
 func (s *Service) Run(parent context.Context, body io.Reader, options *imageproc.Options) (*Result, error) {
-	if err := s.acquire(); err != nil {
+	kind := inspect
+	if options != nil {
+		kind = transform
+	}
+	if err := s.acquire(parent, kind); err != nil {
 		return nil, err
 	}
 	ctx, cancel := context.WithTimeout(parent, s.timeout)
@@ -58,8 +69,7 @@ func (s *Service) Run(parent context.Context, body io.Reader, options *imageproc
 	release := func() {
 		stop()
 		cancel()
-		<-s.slots
-		s.wg.Done()
+		s.release(kind)
 	}
 	done := make(chan completion)
 	go s.run(ctx, body, options, release, done)
@@ -72,21 +82,6 @@ func (s *Service) Run(parent context.Context, body io.Reader, options *imageproc
 		return outcome.result, outcome.err
 	case <-ctx.Done():
 		return nil, ctx.Err()
-	}
-}
-
-func (s *Service) acquire() error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.stopped {
-		return imageproc.ErrUnavailable
-	}
-	select {
-	case s.slots <- struct{}{}:
-		s.wg.Add(1)
-		return nil
-	default:
-		return imageproc.ErrBusy
 	}
 }
 

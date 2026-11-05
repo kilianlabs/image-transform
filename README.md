@@ -105,7 +105,14 @@ See the [API guide](docs/api.md) for options, response headers, and errors, or u
 | `MAX_PIXELS` | `50000000` | 50 megapixels across all source frames |
 | `MAX_FRAMES` | `500` | Maximum frames per input |
 | `MAX_CONCURRENT` | `1` | Simultaneous image requests |
+| `MAX_INSPECT_CONCURRENT` | `MAX_CONCURRENT` | Simultaneous inspections |
+| `MAX_TRANSFORM_CONCURRENT` | `MAX_CONCURRENT` | Simultaneous conversions |
 | `REQUEST_TIMEOUT` | `120s` | Upload and processing deadline |
+
+Requests that exceed the overall or operation limit receive `503 busy` immediately.
+Your application owns pending work and retries. See
+[concurrency settings](docs/operations.md#size-resources-for-your-workload) to
+reserve capacity for inspections alongside conversions.
 
 The container runs as a non-root user and includes a health check. The examples
 above provide a read-only root filesystem, temporary storage, and resource

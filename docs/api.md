@@ -203,7 +203,7 @@ output you need.
 ## Errors
 
 Errors use `application/problem+json` with `type`, `title`, `status`, and `detail`.
-For example, when all processing slots are occupied:
+For example, when the requested operation reaches its concurrency limit:
 
 ```json
 {
@@ -231,12 +231,13 @@ Use `type` to identify an error in client code. All types begin with
 | `500` | `internal` | Check service logs and resource limits; report persistent failures. |
 | `503` | `busy` | Retry with backoff or reduce simultaneous requests. |
 | `503` | `cancelled`, `unavailable` | Check service health before retrying. |
-| `504` | `timeout` | Processing exceeded its deadline. Review image size, resource limits, and the timeout. |
+| `504` | `timeout` | Input transfer or processing exceeded the request deadline. Review image size, resource limits, and the timeout. |
 
-The service does not queue or retry requests. After a timeout or cancellation,
-processing may take a little longer to stop; during that time it still occupies
-a slot. A disconnected client or an interrupted response may receive no complete
-error body. Close response bodies promptly so connections and capacity can be reused.
+The service does not queue or retry requests. Applications own pending work and
+retry scheduling. After a timeout or cancellation, processing may take a little
+longer to stop; during that time it still occupies a slot. A disconnected client
+or an interrupted response may receive no complete error body. Close response
+bodies promptly so connections and capacity can be reused.
 
 Image bytes and metadata are omitted from errors and logs. All responses use
 `Cache-Control: no-store`.

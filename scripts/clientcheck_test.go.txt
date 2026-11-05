@@ -35,7 +35,7 @@ func TestGeneratedClientAndContract(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer native.Shutdown()
-	s := service.New(p, t.TempDir(), 100<<20, 1, time.Minute)
+	s := service.New(p, t.TempDir(), 100<<20, service.AdmissionLimits{Concurrent: 1}, time.Minute)
 	defer func() { s.Stop(); s.Wait() }()
 	server := httptest.NewServer(httpapi.New(s, nil).Handler)
 	defer server.Close()
