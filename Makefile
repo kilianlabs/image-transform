@@ -1,4 +1,4 @@
-.PHONY: check check-project check-local format openapi openapi-check client-check build smoke smoke-platforms
+.PHONY: check check-project check-local format openapi openapi-check client-check build smoke smoke-run smoke-platforms
 
 PLATFORMS ?= linux/amd64 linux/arm64
 PLATFORM_FLAG = $(if $(PLATFORM),--platform $(PLATFORM))
@@ -14,7 +14,7 @@ check-local:
 	test -z "$$(gofmt -l cmd internal)"
 	test -z "$$(gofmt -l scripts/clientcheck_test.go.txt)"
 	go vet ./...
-	go test -race ./...
+	go test -race -v ./...
 	go build ./...
 	$(MAKE) openapi-check client-check
 
@@ -35,6 +35,9 @@ build:
 
 smoke:
 	docker buildx build $(PLATFORM_FLAG) --target smoke --load -t image-transform:smoke .
+	$(MAKE) smoke-run
+
+smoke-run:
 	docker run --rm $(PLATFORM_FLAG) --read-only \
 		--tmpfs /tmp:rw,noexec,nosuid,size=2147483648 \
 		--memory=2g --cpus=2 --pids-limit=128 image-transform:smoke

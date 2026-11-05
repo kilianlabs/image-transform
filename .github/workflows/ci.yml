@@ -13,16 +13,24 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  check:
-    name: Check project and containers
-    runs-on: ubuntu-latest
-    timeout-minutes: 35
+  platform-checks:
+    name: Check ${{ matrix.arch }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
       - name: Check release version
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: matrix.arch == 'amd64' && startsWith(github.ref, 'refs/tags/v')
         env:
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
@@ -34,11 +42,40 @@ jobs:
           assert os.environ['RELEASE_TAG'] == 'v' + version
           assert json.loads(Path('openapi.json').read_text())['info']['version'] == version
           PY
-      - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4
-        with:
-          platforms: arm64
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
       - name: Check Go, native codecs, and OpenAPI client
-        run: make check-project
-      - name: Smoke test final runtime on each platform
-        run: make smoke-platforms
+        if: matrix.arch == 'amd64'
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
+        with:
+          context: .
+          target: check
+          platforms: linux/amd64
+          cache-from: |
+            type=gha,scope=project-amd64
+            type=gha,scope=smoke-amd64
+          cache-to: type=gha,mode=max,scope=project-amd64
+      - name: Build runtime smoke image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
+        with:
+          context: .
+          target: smoke
+          platforms: linux/${{ matrix.arch }}
+          load: true
+          tags: image-transform:smoke
+          cache-from: type=gha,scope=smoke-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=smoke-${{ matrix.arch }}
+      - name: Smoke test final runtime
+        run: make smoke-run PLATFORM=linux/${{ matrix.arch }}
+
+  # Keep one stable required check that covers both matrix jobs.
+  check:
+    name: Check project and containers
+    if: always()
+    needs: platform-checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 1
+    steps:
+      - name: Require all platform checks to pass
+        env:
+          RESULT: ${{ needs.platform-checks.result }}
+        run: test "$RESULT" = success

@@ -66,5 +66,9 @@ jobs:
           push: true
           labels: ${{ steps.meta.outputs.labels }}
           tags: ${{ steps.meta.outputs.tags }}
-          cache-from: type=gha,scope=multi-platform
-          cache-to: type=gha,mode=min,scope=multi-platform
+          # Reuse the native builds that just passed the runtime smoke tests.
+          cache-from: |
+            type=gha,scope=smoke-amd64
+            type=gha,scope=smoke-arm64
+            type=gha,scope=multi-platform
+          cache-to: type=gha,mode=max,scope=multi-platform

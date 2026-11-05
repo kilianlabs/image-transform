@@ -67,16 +67,20 @@ BMP, TIFF, HEIC/HEIF, and AVIF inputs, still and animated WebP/JPEG XL conversio
 response headers, OpenAPI, and shutdown with an incomplete request. It runs with
 a read-only filesystem and resource limits.
 
-CI tests Linux AMD64 and ARM64. When changing native libraries, base images, or
-processing options, run both platforms locally with Docker's emulation support:
+CI runs the full project checks on Linux AMD64 and tests both runtime images on
+native AMD64 and ARM64 runners in parallel. Docker layer caches persist between
+runs, and publishing reuses the tested builds. Tests print their progress.
+
+When changing native libraries, base images, or processing options, run both
+platforms locally with Docker's emulation support:
 
 ```sh
 make smoke-platforms
 ```
 
 To test one platform, use `make smoke PLATFORM=linux/amd64` or
-`make smoke PLATFORM=linux/arm64`. CI uses the same Make targets for the project
-checks and container tests.
+`make smoke PLATFORM=linux/arm64`. CI builds the same Docker check and smoke
+targets with caching, then uses `make smoke-run` to test the already-built image.
 
 Compare visual quality on representative images when changing codec defaults.
 For available image tags and deployment updates, see [image tags and upgrades](docs/releases.md).
