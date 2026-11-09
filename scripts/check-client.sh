@@ -2,11 +2,11 @@
 set -eu
 
 # renovate: datasource=go depName=github.com/oapi-codegen/oapi-codegen/v2 versioning=go-mod
-OAPI_CODEGEN_VERSION=v2.8.1
+OAPI_CODEGEN_VERSION=v2.8.2
 # renovate: datasource=go depName=github.com/oapi-codegen/runtime versioning=go-mod
 OAPI_RUNTIME_VERSION=v1.8.0
 # renovate: datasource=go depName=github.com/getkin/kin-openapi versioning=go-mod
-KIN_OPENAPI_VERSION=v0.142.0
+KIN_OPENAPI_VERSION=v0.153.0
 
 project_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 go_version=$(go list -m -f '{{.GoVersion}}')
