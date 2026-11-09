@@ -8,7 +8,7 @@ ARG WEBP_VERSION=1.6.0-r0
 # renovate: datasource=apk depName=lcms2 versioning=apk
 ARG LCMS_VERSION=2.19-r0
 # renovate: datasource=apk depName=libheif versioning=apk
-ARG HEIF_VERSION=1.23.4-r0
+ARG HEIF_VERSION=1.23.7-r0
 # renovate: datasource=apk depName=imagemagick versioning=apk
 ARG MAGICK_VERSION=7.1.2.35-r0
 
