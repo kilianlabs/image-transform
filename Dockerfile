@@ -12,7 +12,7 @@ ARG HEIF_VERSION=1.23.4-r0
 # renovate: datasource=apk depName=imagemagick versioning=apk
 ARG MAGICK_VERSION=7.1.2.35-r0
 
-FROM golang:1.26.10-alpine3.24@sha256:a2012b4a1d1f9f7e9f44e0d39b805a901e856b1dd80b4e6ee4338db547050308 AS development
+FROM golang:1.26.10-alpine3.24@sha256:87c65a688975c0b1d4585d204874c45ca78354670e3a5f11368c5a492303d696 AS development
 ARG VIPS_VERSION
 ARG JXL_VERSION
 ARG WEBP_VERSION
@@ -39,7 +39,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build go build -trimpath -o /out/i
 FROM development AS smoke-build
 RUN --mount=type=cache,target=/root/.cache/go-build go build -trimpath -o /out/smoke ./cmd/smoke
 
-FROM alpine:3.24@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a AS runtime-base
+FROM alpine:3.24@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf AS runtime-base
 ARG VIPS_VERSION
 ARG JXL_VERSION
 ARG WEBP_VERSION
