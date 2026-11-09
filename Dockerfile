@@ -12,7 +12,7 @@ ARG HEIF_VERSION=1.23.4-r0
 # renovate: datasource=apk depName=imagemagick versioning=apk
 ARG MAGICK_VERSION=7.1.2.35-r0
 
-FROM golang:1.26.10-alpine3.24@sha256:a2012b4a1d1f9f7e9f44e0d39b805a901e856b1dd80b4e6ee4338db547050308 AS development
+FROM golang:1.27.3-alpine3.24@sha256:fa3d596898d9f126af7c01d14ee7597bab3f39cccf392ef36b69fe77cd681f18 AS development
 ARG VIPS_VERSION
 ARG JXL_VERSION
 ARG WEBP_VERSION
