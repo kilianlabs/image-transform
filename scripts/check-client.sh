@@ -9,7 +9,7 @@ OAPI_RUNTIME_VERSION=v1.9.0
 KIN_OPENAPI_VERSION=v0.153.0
 
 project_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-go_version=$(go list -m -f '{{.GoVersion}}')
+go_version=$(go -C "$project_dir" list -m -f '{{.GoVersion}}')
 check_dir=$(mktemp -d)
 trap 'rm -rf "$check_dir"' EXIT HUP INT TERM
 go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@"$OAPI_CODEGEN_VERSION" \

@@ -178,8 +178,8 @@ func TestBMPPaletteAndTopDownRows(t *testing.T) {
 	indexed := image.NewPaletted(image.Rect(0, 0, 3, 2), palette)
 	indexed.Pix = []byte{0, 0, 0, 1, 1, 1}
 	rgb := image.NewRGBA(indexed.Bounds())
-	for y := 0; y < 2; y++ {
-		for x := 0; x < 3; x++ {
+	for y := range 2 {
+		for x := range 3 {
 			rgb.Set(x, y, indexed.At(x, y))
 		}
 	}

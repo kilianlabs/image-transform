@@ -2,7 +2,6 @@ package native
 
 import (
 	"context"
-	"math"
 	"slices"
 
 	"github.com/davidbyttow/govips/v2/vips"
@@ -113,7 +112,7 @@ func prepareFrames(ctx context.Context, source *vips.ImageRef, info imageproc.Me
 			}
 		}
 	}()
-	for i := 0; i < info.FrameCount; i++ {
+	for i := range info.FrameCount {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
@@ -179,10 +178,10 @@ func normalizeFrame(ctx context.Context, frame *vips.ImageRef, options imageproc
 	}
 	scale := 1.0
 	if options.Width > 0 {
-		scale = math.Min(scale, float64(options.Width)/float64(frame.Width()))
+		scale = min(scale, float64(options.Width)/float64(frame.Width()))
 	}
 	if options.Height > 0 {
-		scale = math.Min(scale, float64(options.Height)/float64(frame.Height()))
+		scale = min(scale, float64(options.Height)/float64(frame.Height()))
 	}
 	// Resize each frame separately: filtering a stacked strip mixes pixels
 	// from adjacent frames and rounds its total height instead of each frame.

@@ -5,6 +5,7 @@ import (
 	"math"
 	"mime"
 	"net/url"
+	"slices"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/kilianlabs/image-transform/internal/imageproc"
@@ -26,14 +27,12 @@ func (u *Upload) Resolve(ctx huma.Context) []error {
 	if err != nil {
 		return []error{problem(400, "invalid-request", "The query string is malformed.")}
 	}
-	allowed := map[string]bool{}
+	var allowed []string
 	if ctx.Operation().OperationID == "transformImage" {
-		for _, key := range []string{"format", "width", "height", "quality", "distance", "lossless"} {
-			allowed[key] = true
-		}
+		allowed = []string{"format", "width", "height", "quality", "distance", "lossless"}
 	}
 	for key, values := range u.query {
-		if !allowed[key] || len(values) != 1 || values[0] == "" {
+		if !slices.Contains(allowed, key) || len(values) != 1 || values[0] == "" {
 			return []error{problem(400, "invalid-request", "Unknown, duplicate, or empty query parameter.")}
 		}
 	}

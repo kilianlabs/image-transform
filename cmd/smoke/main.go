@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/davidbyttow/govips/v2/vips"
+	"github.com/kilianlabs/image-transform/internal/imageproc"
 	"github.com/kilianlabs/image-transform/internal/testimage"
 )
 
@@ -131,16 +132,7 @@ func run() error {
 		if err != nil {
 			return err
 		}
-		var metadata struct {
-			MIMEType      string `json:"mime_type"`
-			SHA256        string `json:"sha256"`
-			Width         int    `json:"width"`
-			FrameCount    int    `json:"frame_count"`
-			FrameDelaysMS []int  `json:"frame_delays_ms"`
-			LoopCount     *int   `json:"loop_count"`
-			PageCount     int    `json:"page_count"`
-			PageIndex     *int   `json:"page_index"`
-		}
+		var metadata imageproc.Metadata
 		err = json.NewDecoder(resp.Body).Decode(&metadata)
 		resp.Body.Close()
 		if err != nil {

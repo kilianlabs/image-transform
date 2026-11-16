@@ -21,8 +21,8 @@ func GIF(width, height int, delays []int, loop int) []byte {
 	animation := &gif.GIF{Delay: delays, LoopCount: loop}
 	for i := range delays {
 		frame := image.NewPaletted(image.Rect(0, 0, width, height), palette)
-		for y := 0; y < height; y++ {
-			for x := 0; x < width; x++ {
+		for y := range height {
+			for x := range width {
 				if x > 0 || width == 1 {
 					frame.SetColorIndex(x, y, uint8(1+i%3))
 				}
@@ -40,8 +40,8 @@ func GIF(width, height int, delays []int, loop int) []byte {
 
 func PNG(width, height int, transparent bool) []byte {
 	img := image.NewNRGBA(image.Rect(0, 0, width, height))
-	for y := 0; y < height; y++ {
-		for x := 0; x < width; x++ {
+	for y := range height {
+		for x := range width {
 			a := uint8(255)
 			if transparent {
 				a = uint8((x*17 + y*3) % 256)

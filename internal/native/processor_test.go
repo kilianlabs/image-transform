@@ -164,8 +164,8 @@ func TestLosslessAndNoUpscale(t *testing.T) {
 		}
 		original := load(t, data)
 		converted := output(t, dest)
-		for y := 0; y < 8; y++ {
-			for x := 0; x < 12; x++ {
+		for y := range 8 {
+			for x := range 12 {
 				a, err := original.GetPoint(x, y)
 				if err != nil {
 					t.Fatal(err)
@@ -262,7 +262,7 @@ func TestDimensionsAndResourceLimits(t *testing.T) {
 
 func TestRepeatedProcessingReleasesNativeResources(t *testing.T) {
 	source := save(t, testimage.PNG(64, 48, true))
-	for i := 0; i < 20; i++ {
+	for i := range 20 {
 		_, err := engine.Transform(t.Context(), source, filepath.Join(t.TempDir(), "out"), imageproc.Options{Format: []string{"webp", "jxl"}[i%2], Quality: 80, Distance: 1})
 		if err != nil {
 			t.Fatal(err)

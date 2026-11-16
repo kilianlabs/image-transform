@@ -54,22 +54,14 @@ func (p *Processor) Transform(ctx context.Context, source, destination string, o
 	if err := ctx.Err(); err != nil {
 		return info, err
 	}
-	decoded, result, err := p.load(ctx, destination)
+	result, err := p.Inspect(ctx, destination)
 	if err != nil {
 		if ctx.Err() != nil {
 			return info, ctx.Err()
 		}
 		return info, errors.New("output validation failed")
 	}
-	defer decoded.Close()
 	if result.Width != width || result.Height != height || result.MIMEType != "image/"+options.Format || !animationMatches(info, result) {
-		return info, errors.New("output validation failed")
-	}
-	err = evaluate(ctx, decoded, func() error { _, err := decoded.Average(); return err })
-	if err != nil {
-		if ctx.Err() != nil {
-			return info, ctx.Err()
-		}
 		return info, errors.New("output validation failed")
 	}
 	return result, nil

@@ -20,7 +20,8 @@ The service listens on `http://127.0.0.1:3000`. Docker supplies Go, the C compil
 and libvips with its input decoders and WebP/JPEG XL support. Dependency downloads
 need network access; image processing and tests run locally with synthetic images.
 
-For host development, install the Go version from [go.mod](go.mod), a C compiler,
+For host development, install Go 1.27 (at least the patch version in
+[go.mod](go.mod)), a C compiler,
 `pkg-config`, libheif development headers, and libvips development libraries with
 WebP/JPEG XL, HEIF, TIFF, and Magick support. HEIF decoding needs HEVC and AV1
 plugins; BMP needs the ImageMagick BMP coder. Image processing calls these

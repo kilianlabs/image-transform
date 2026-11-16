@@ -43,39 +43,19 @@ func Read(getenv func(string) string) (Config, error) {
 	if v := getenv("TMPDIR"); v != "" {
 		c.TempDir = v
 	}
-	for _, item := range []struct {
-		name string
-		dst  *int64
-		max  int64
-	}{
+	if err := readIntegers(getenv, []integerSetting[int64]{
 		{"MAX_INPUT_BYTES", &c.MaxInputBytes, 1 << 40},
 		{"MAX_OUTPUT_BYTES", &c.MaxOutputBytes, 1 << 40},
 		{"MAX_PIXELS", &c.MaxPixels, 16_383 * 16_383},
-	} {
-		if v := getenv(item.name); v != "" {
-			n, err := strconv.ParseInt(v, 10, 64)
-			if err != nil || n < 1 || n > item.max {
-				return c, fmt.Errorf("invalid %s", item.name)
-			}
-			*item.dst = n
-		}
+	}); err != nil {
+		return c, err
 	}
-	for _, item := range []struct {
-		name string
-		dst  *int
-		max  int
-	}{
+	if err := readIntegers(getenv, []integerSetting[int]{
 		{"PORT", &c.Port, 65535}, {"MAX_AXIS", &c.MaxAxis, 16_383},
 		{"MAX_FRAMES", &c.MaxFrames, 10000},
 		{"MAX_CONCURRENT", &c.MaxConcurrent, 64}, {"VIPS_THREADS", &c.VIPSThreads, 64},
-	} {
-		if v := getenv(item.name); v != "" {
-			n, err := strconv.Atoi(v)
-			if err != nil || n < 1 || n > item.max {
-				return c, fmt.Errorf("invalid %s", item.name)
-			}
-			*item.dst = n
-		}
+	}); err != nil {
+		return c, err
 	}
 	if v := getenv("REQUEST_TIMEOUT"); v != "" {
 		d, err := time.ParseDuration(v)
@@ -85,21 +65,32 @@ func Read(getenv func(string) string) (Config, error) {
 		c.RequestTimeout = d
 	}
 	c.MaxInspectConcurrent, c.MaxTransformConcurrent = c.MaxConcurrent, c.MaxConcurrent
-	for _, item := range []struct {
-		name string
-		dst  *int
-		max  int
-	}{
+	if err := readIntegers(getenv, []integerSetting[int]{
 		{"MAX_INSPECT_CONCURRENT", &c.MaxInspectConcurrent, c.MaxConcurrent},
 		{"MAX_TRANSFORM_CONCURRENT", &c.MaxTransformConcurrent, c.MaxConcurrent},
-	} {
-		if v := getenv(item.name); v != "" {
-			n, err := strconv.Atoi(v)
-			if err != nil || n < 1 || n > item.max {
-				return c, fmt.Errorf("invalid %s", item.name)
-			}
-			*item.dst = n
-		}
+	}); err != nil {
+		return c, err
 	}
 	return c, nil
+}
+
+type integerSetting[T int | int64] struct {
+	name string
+	dst  *T
+	max  T
+}
+
+func readIntegers[T int | int64](getenv func(string) string, settings []integerSetting[T]) error {
+	for _, setting := range settings {
+		value := getenv(setting.name)
+		if value == "" {
+			continue
+		}
+		n, err := strconv.ParseInt(value, 10, 64)
+		if err != nil || n < 1 || n > int64(setting.max) {
+			return fmt.Errorf("invalid %s", setting.name)
+		}
+		*setting.dst = T(n)
+	}
+	return nil
 }

@@ -27,8 +27,7 @@ func (p *Problem) ContentType(string) string { return "application/problem+json"
 func init() {
 	huma.NewError = func(status int, _ string, errs ...error) huma.StatusError {
 		for _, err := range errs {
-			var p *Problem
-			if errors.As(err, &p) {
+			if p, ok := errors.AsType[*Problem](err); ok {
 				return p
 			}
 		}

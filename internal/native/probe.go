@@ -28,8 +28,8 @@ func (p *Processor) Probe(ctx context.Context, dir string) error {
 	}
 	defer os.RemoveAll(work)
 	img := image.NewNRGBA(image.Rect(0, 0, 8, 4))
-	for y := 0; y < 4; y++ {
-		for x := 0; x < 8; x++ {
+	for y := range 4 {
+		for x := range 8 {
 			img.SetNRGBA(x, y, color.NRGBA{R: 255, G: uint8(x * 30), A: uint8(y * 80)})
 		}
 	}

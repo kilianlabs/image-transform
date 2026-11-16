@@ -59,7 +59,7 @@ func TestAnimatedCodecMatrix(t *testing.T) {
 						defer decoded.Close()
 						// Check both frame edges: resizing the whole strip blends
 						// colors across boundaries and changes the frame geometry.
-						for frame := 0; frame < 3; frame++ {
+						for frame := range 3 {
 							for _, y := range []int{frame * height, (frame+1)*height - 1} {
 								pixel, err := decoded.GetPoint(width-1, y)
 								if err != nil || len(pixel) != 4 || pixel[frame] < 240 || pixel[(frame+1)%3] > 15 || pixel[(frame+2)%3] > 15 || pixel[3] != 255 {
@@ -202,7 +202,7 @@ func TestAnimationLimitsAndCleanup(t *testing.T) {
 		}
 		vips.AssertNoLeaks(t)
 	}
-	for i := 0; i < 12; i++ {
+	for i := range 12 {
 		ctx, cancel := context.WithCancel(t.Context())
 		if i%3 == 0 {
 			cancel()
