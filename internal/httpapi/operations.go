@@ -29,7 +29,7 @@ func (app *App) registerOperations() {
 		}
 		result, err := app.runner.Run(ctx, input.reader, nil)
 		if err != nil {
-			return nil, report(err, "inspect")
+			return nil, report(ctx, err, "inspect")
 		}
 		defer result.Close()
 		return &struct{ Body imageproc.Metadata }{Body: result.Metadata}, nil
@@ -53,12 +53,12 @@ func (app *App) registerOperations() {
 		}
 		result, err := app.runner.Run(ctx, input.reader, &options)
 		if err != nil {
-			return nil, report(err, "transform")
+			return nil, report(ctx, err, "transform")
 		}
 		file, err := os.Open(result.Path)
 		if err != nil {
 			result.Close()
-			return nil, report(err, "read-output")
+			return nil, report(ctx, err, "read-output")
 		}
 		return &huma.StreamResponse{Body: func(hctx huma.Context) {
 			defer result.Close()

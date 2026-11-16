@@ -21,7 +21,7 @@ import (
 )
 
 func main() {
-	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)).With("service", "image-transform"))
 	if len(os.Args) == 2 && os.Args[1] == "healthcheck" {
 		os.Exit(healthcheck())
 	}

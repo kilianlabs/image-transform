@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log/slog"
 	"net/http"
 	"os"
 
@@ -77,8 +76,8 @@ func writeProblem(w http.ResponseWriter, p *Problem) {
 	_ = json.NewEncoder(w).Encode(p)
 }
 
-func report(err error, operation string) *Problem {
+func report(ctx context.Context, err error, operation string) *Problem {
 	p := failure(err)
-	slog.Warn("Image request failed", "operation", operation, "error_type", p.Type, "status", p.Status)
+	requestLogger(ctx).WarnContext(ctx, "Image request failed", "operation", operation, "error_type", p.Type, "status", p.Status)
 	return p
 }

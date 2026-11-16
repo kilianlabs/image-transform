@@ -12,6 +12,7 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humachi"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/kilianlabs/image-transform/internal/buildinfo"
 	"github.com/kilianlabs/image-transform/internal/imageproc"
 	"github.com/kilianlabs/image-transform/internal/service"
@@ -29,6 +30,8 @@ type App struct {
 
 func New(runner Runner, isReady func() bool) *App {
 	router := chi.NewRouter()
+	router.Use(middleware.RequestID)
+	router.Use(logRequests)
 	router.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Cache-Control", "no-store")

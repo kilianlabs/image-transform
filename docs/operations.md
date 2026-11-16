@@ -132,11 +132,19 @@ the service exits instead of accepting requests.
 
 ### Logs
 
-JSON logs go to standard output and include startup, the listening address,
-shutdown, and processing failures. Failure entries identify the operation,
-error type, and HTTP status. Image bytes, filenames, metadata, and raw codec
-errors are omitted. Monitor container memory and CPU alongside the frequency
-of `busy`, `timeout`, and `internal` errors.
+JSON logs go to standard output with `service: "image-transform"` and include
+startup, the listening address, shutdown, HTTP access, and processing failures.
+Each request uses the incoming `X-Request-ID` header, or generates an ID if the
+header is absent or empty. Access and operation failure logs share that value
+in `request_id`, so callers can correlate requests across services.
+
+Every completed request emits `event: "http_request"` with `method`, `path`,
+`status`, `duration_ms`, `proto`, and `size` (response bytes), including health,
+OpenAPI, and rejected requests. Failure entries also identify the `operation`
+and `error_type`. Query strings, request bodies, cookies, authorization headers,
+image bytes, filenames, metadata, and raw codec errors are omitted. Monitor
+container memory and CPU alongside the frequency of `busy`, `timeout`, and
+`internal` errors.
 
 ## Stop or remove the service
 
