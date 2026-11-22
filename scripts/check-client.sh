@@ -2,9 +2,9 @@
 set -eu
 
 # renovate: datasource=go depName=github.com/oapi-codegen/oapi-codegen/v2 versioning=go-mod
-OAPI_CODEGEN_VERSION=v2.8.2
+OAPI_CODEGEN_VERSION=v2.9.0
 # renovate: datasource=go depName=github.com/oapi-codegen/runtime versioning=go-mod
-OAPI_RUNTIME_VERSION=v1.9.0
+OAPI_RUNTIME_VERSION=v1.9.1
 # renovate: datasource=go depName=github.com/getkin/kin-openapi versioning=go-mod
 KIN_OPENAPI_VERSION=v0.153.0
 
