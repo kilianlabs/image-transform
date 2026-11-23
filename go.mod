@@ -3,7 +3,7 @@ module github.com/kilianlabs/image-transform
 go 1.27.4
 
 require (
-	github.com/danielgtaylor/huma/v2 v2.40.0
+	github.com/danielgtaylor/huma/v2 v2.41.0
 	github.com/davidbyttow/govips/v2 v2.20.0
 	github.com/gabriel-vasile/mimetype v1.4.16
 	github.com/go-chi/chi/v5 v5.5.0
@@ -11,6 +11,6 @@ require (
 )
 
 require (
-	golang.org/x/net v0.62.0 // indirect
+	golang.org/x/net v0.63.0 // indirect
 	golang.org/x/text v0.44.0 // indirect
 )
